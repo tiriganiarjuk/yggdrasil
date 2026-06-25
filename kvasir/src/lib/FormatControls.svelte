@@ -8,6 +8,8 @@
     { value: "toml", label: "TOML" },
     { value: "toon", label: "TOON" },
     { value: "ron", label: "RON" },
+    { value: "xml", label: "XML" },
+    { value: "md", label: "MD" },
   ];
 
   let {
@@ -27,6 +29,8 @@
       toml: { count: dataFormats.toml.token_count, savings: baseline - dataFormats.toml.token_count },
       toon: { count: dataFormats.toon.token_count, savings: baseline - dataFormats.toon.token_count },
       ron: { count: dataFormats.ron.token_count, savings: baseline - dataFormats.ron.token_count },
+      xml: { count: dataFormats.xml.token_count, savings: baseline - dataFormats.xml.token_count },
+      md: { count: dataFormats.md.token_count, savings: baseline - dataFormats.md.token_count },
       source,
       baseline,
     };
@@ -37,7 +41,7 @@
   <ToggleGroup options={formatOptions} bind:selected={selectedFormat} highlightValue={tokenStats.source} />
   <div class="token-stats">
     <span class="token-label">Tokens:</span>
-    {#each ["json", "yaml", "toml", "toon", "ron"] as fmt}
+    {#each ["json", "yaml", "toml", "toon", "ron", "xml", "md"] as fmt}
       {@const stat = tokenStats[fmt as DataFormat]}
       <span
         class="token-item"

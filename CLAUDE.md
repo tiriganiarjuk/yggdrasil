@@ -90,6 +90,28 @@ None of them felt uncertain while doing it.
 **What is the current phase?** Core infrastructure exists for all 5 apps. Hlidskjalf has a working event feed with datagram rendering. Active work: integrating Bifrost exchange diffs into Hlidskjalf display, building the multi-modal alert system, and adding session-aware filtering.
 
 ---
+
+## You Will Get These Things Wrong (salvaged)
+
+### Looking Everywhere But the Setting When a Restriction Is Reported
+**Detection:** The user says a restriction exists ("we set it so Kvasir can only browse `~/.ai/`", "there's a limit on Z") and you start searching for errors, Tauri scopes, capabilities, or entitlements, or you speculate that the restriction doesn't exist.
+**Why it's wrong:** The restriction does exist — the user put it there. Kvasir's path restriction, for example, is enforced in the shared `ContainerLayout.svelte` (`cwdRoot`, `isWithinBoundary`), NOT in Tauri scopes/capabilities/entitlements or app-specific Rust. Chasing the wrong layer cost many rounds and forced the user to escalate repeatedly.
+**Recovery:** FIND THE SETTING FIRST. Grep broadly for the restricted path/value across ALL source files — including shared UI components like `ContainerLayout.svelte` — before investigating any other cause.
+
+---
+
+## Project Notes (salvaged)
+
+### Build / Deploy Procedure
+- Iterating on one app? Build just that app: `cd <app> && npm run tauri build`. Do NOT rebuild the whole ecosystem for a small change.
+- Deploying a Tauri app: kill the running app, clear WebKit caches, then copy the `.app` to `/Applications`. `deploy_apps.sh` does this; the kill + cache-clear steps matter because the old process holds the old binary and WKWebView caches stale frontend.
+
+### Out-of-Repo Operational Infrastructure
+The datagram transport depends on system services installed OUTSIDE this repo (not discoverable from the source tree):
+- **record_datagrams daemon** — `~/Library/LaunchAgents/com.smidja.record-datagrams.plist` (KeepAlive, RunAtLoad). Persists the daily datagram archive via the Unix stream channel.
+- **Loopback MTU** — `/Library/LaunchDaemons/com.smidja.loopback-mtu.plist` raises `lo0` MTU to 65535 at boot (needs sudo). Required so large UDP-multicast datagrams (e.g. quality reports with many groups) are not silently dropped on loopback.
+
+---
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <!-- EVERYTHING ABOVE THIS LINE IS BEHAVIORAL (human-maintained, empirical) -->
 <!-- EVERYTHING BELOW THIS LINE IS DYNAMIC ORIENTATION (agent-regenerated)  -->

@@ -12,3 +12,4 @@ ron = { workspace = true }
 csv = { workspace = true }
 parquet = { workspace = true }
 arrow = { workspace = true }
+tiktoken-rs = { workspace = true }

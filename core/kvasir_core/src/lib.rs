@@ -30,6 +30,8 @@ pub struct AllFormats {
     pub toml: FormatConversion,
     pub toon: FormatConversion,
     pub ron: FormatConversion,
+    pub xml: FormatConversion,
+    pub md: FormatConversion,
     pub source_format: String,
 }
 
@@ -113,6 +115,7 @@ pub fn convert_to_all_formats(content: &str, source_format: &str) -> Result<AllF
         "toml" => parse::toml(content).map_err(|e| e.to_string())?,
         "toon" => parse::toon(content).map_err(|e| e.to_string())?,
         "ron" => ron::from_str(content).map_err(|e| e.to_string())?,
+        "xml" => format_core::parse::xml(content).map_err(|e| e.to_string())?,
         _ => return Err(format!("Unsupported format: {}", source_format)),
     };
 
@@ -130,26 +133,40 @@ pub fn convert_to_all_formats(content: &str, source_format: &str) -> Result<AllF
     let ron_content = ron::ser::to_string_pretty(&value, ron::ser::PrettyConfig::default())
         .unwrap_or_else(|e| format!("// RON: {}", e));
 
+    let xml_content = format_core::serialize::to_xml(&value)
+        .unwrap_or_else(|e| format!("<!-- XML: {} -->", e));
+
+    let md_content = format_core::serialize::to_markdown(&value)
+        .unwrap_or_else(|e| format!("*Markdown error: {}*", e));
+
     Ok(AllFormats {
         json: FormatConversion {
-            token_count: estimate_token_count(&json_content),
+            token_count: count_tokens(&json_content),
             content: json_content,
         },
         yaml: FormatConversion {
-            token_count: estimate_token_count(&yaml_content),
+            token_count: count_tokens(&yaml_content),
             content: yaml_content,
         },
         toml: FormatConversion {
-            token_count: estimate_token_count(&toml_content),
+            token_count: count_tokens(&toml_content),
             content: toml_content,
         },
         toon: FormatConversion {
-            token_count: estimate_token_count(&toon_content),
+            token_count: count_tokens(&toon_content),
             content: toon_content,
         },
         ron: FormatConversion {
-            token_count: estimate_token_count(&ron_content),
+            token_count: count_tokens(&ron_content),
             content: ron_content,
+        },
+        xml: FormatConversion {
+            token_count: count_tokens(&xml_content),
+            content: xml_content,
+        },
+        md: FormatConversion {
+            token_count: count_tokens(&md_content),
+            content: md_content,
         },
         source_format: source_format.to_string(),
     })
@@ -165,6 +182,7 @@ pub fn detect_data_format(path: &str) -> Option<String> {
         "toml" => "toml",
         "toon" => "toon",
         "ron" => "ron",
+        "xml" => "xml",
         "csv" => "csv",
         "tsv" => "tsv",
         "parquet" => "parquet",
@@ -243,6 +261,7 @@ pub fn export_entry_as(
             "toml" => all.toml.content,
             "toon" => all.toon.content,
             "ron" => all.ron.content,
+            "xml" => all.xml.content,
             _ => return Err(format!("Unknown format: {}", format)),
         }
     };
@@ -318,8 +337,11 @@ fn effective_extension(path: &Path) -> String {
     }
 }
 
-fn estimate_token_count(content: &str) -> usize {
-    content.len() / 4
+fn count_tokens(content: &str) -> usize {
+    use std::sync::OnceLock;
+    static BPE: OnceLock<tiktoken_rs::CoreBPE> = OnceLock::new();
+    let bpe = BPE.get_or_init(|| tiktoken_rs::cl100k_base().expect("Failed to load cl100k tokenizer"));
+    bpe.encode_ordinary(content).len()
 }
 
 fn read_csv_table(file_path: &Path, delimiter: u8) -> Result<TableData, String> {

@@ -8,6 +8,8 @@
     { value: "toml", label: "TOML" },
     { value: "toon", label: "TOON" },
     { value: "ron", label: "RON" },
+    { value: "xml", label: "XML" },
+    { value: "md", label: "MD" },
   ];
   import hljs from "highlight.js";
   import type { AllFormats, DataFormat, JsonlInfo, JsonlEntry, WrapMode } from "./kvasir-types";
@@ -138,7 +140,7 @@
     if (!jsonlEntry) return "";
     if (jsonlFormat === "json") return jsonlEntry.content;
     if (jsonlConverted) {
-      const fmt = jsonlConverted[jsonlFormat as keyof Pick<AllFormats, "json" | "yaml" | "toml" | "toon">];
+      const fmt = jsonlConverted[jsonlFormat as keyof Pick<AllFormats, "json" | "yaml" | "toml" | "toon" | "ron" | "xml" | "md">];
       return fmt?.content || jsonlEntry.content;
     }
     return jsonlEntry.content;

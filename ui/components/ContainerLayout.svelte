@@ -103,6 +103,8 @@
   // ── Constants ─────────────────────────────────────────────────────────
   const HOME = "/Users/johnny";
   const AI_HOME = `${HOME}/.ai`;
+  const CLAUDE_HOME = `${HOME}/.claude`;
+  const ALLOWED_ROOTS = [AI_HOME, CLAUDE_HOME];
 
   // ── Persisted state ─────────────────────────────────────────────────
   function storageKey(property: string): string {
@@ -152,9 +154,14 @@
   // ── CWD boundary ─────────────────────────────────────────────────────
   let cwdRoot = $derived(homeBrowse ? HOME : AI_HOME);
 
-  // Enforce boundary: clamp directory if it escapes the root
+  function isWithinBoundary(path: string): boolean {
+    if (homeBrowse) return path.startsWith(HOME);
+    return ALLOWED_ROOTS.some(root => path.startsWith(root));
+  }
+
+  // Enforce boundary: clamp directory if it escapes allowed roots
   $effect(() => {
-    if (directory && !directory.startsWith(cwdRoot)) {
+    if (directory && !isWithinBoundary(directory)) {
       directory = cwdRoot;
       onDirectoryChange?.(cwdRoot);
     }
@@ -184,14 +191,14 @@
   function navigateUp() {
     if (!directory || directory === cwdRoot) return;
     const parent = directory.replace(/\/[^/]+\/?$/, "") || "/";
-    if (!parent.startsWith(cwdRoot)) return;
+    if (!isWithinBoundary(parent)) return;
     directory = parent;
     onDirectoryChange?.(parent);
   }
 
   // Wrapped breadcrumb navigation — enforce boundary
   function handleBreadcrumbNavigate(path: string) {
-    if (!path.startsWith(cwdRoot)) return;
+    if (!isWithinBoundary(path)) return;
     onBreadcrumbNavigate?.(path);
   }
 

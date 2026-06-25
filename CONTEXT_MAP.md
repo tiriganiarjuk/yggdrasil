@@ -1,6 +1,6 @@
 # CONTEXT_MAP — Yggdrasil
 
-**Last updated:** 2026-03-08
+**Last updated:** 2026-04-01
 
 ## 1. Purpose Statement
 
@@ -74,23 +74,25 @@ Yggdrasil is a unified introspection platform — 5 Tauri 2.x desktop apps for m
 | `common_core` | `core/common_core/` | Shared utilities used by 2+ core crates | `open_in_editor()` |
 | `hlidskjalf_core` | `core/hlidskjalf_core/` | Socket listener, datagram parsing, lockfile monitor, log rotation, voice | `Datagram`, `DatagramKind`, `Priority` (re-exported from datagram), `HookEvent`, `start_all()`, `speak()` |
 | `svalinn_core` | `core/svalinn_core/` | QA sidecar scanning, saga runner | `scan_directory()`, `list_qa_tree()`, `QaSidecarReport`, `ScanResult` |
-| `kvasir_core` | `core/kvasir_core/` | File browsing, format conversion (JSON/YAML/TOML/TOON) | `list_directory()`, `read_file()`, `convert_to_all_formats()`, `detect_data_format()` |
+| `kvasir_core` | `core/kvasir_core/` | File browsing, format conversion (JSON/YAML/TOML/TOON/RON/XML/MD), JSONL entry browsing, tabular data (CSV/TSV/Parquet), BPE token counting | `list_directory()`, `read_file()`, `convert_to_all_formats()`, `detect_data_format()`, `read_jsonl_info()`, `read_jsonl_entry()`, `export_entry_as()`, `read_table()`, `export_table_csv()` |
 | `ratatoskr_core` | `core/ratatoskr_core/` | Graph loading, JSON-LD parsing, merge config | `load_graph()`, `parse_jsonld()` |
 
 ### Cross-Repo Dependency
 
 | Crate | Source | What It Provides |
 |-------|--------|-----------------|
-| `datagram` | `../nornir/capability/datagram` | `Datagram`, `DatagramKind`, `Priority` enums, `now()`, fire-and-forget Unix socket send |
+| `datagram_io` | `../nornir/capability/datagram_io` | `Datagram`, `DatagramKind`, `Priority` enums, `now()`, fire-and-forget Unix socket send |
+| `format_core` | `../nornir/core/format_core` | Format parsing (JSON/YAML/TOML/TOON/XML → Value) and serialization (Value → JSON/YAML/TOML/TOON/XML/Markdown) |
+| `error_core` | `../nornir/core/error_core` | `FormatError` enum with per-format parse variants + educational diagnostics |
 
 ### Tauri Shells — Thin Command Wrappers
 
 | App | Tauri Crate Path | Commands Registered |
 |-----|-----------------|---------------------|
-| Hlidskjalf | `hlidskjalf/src-tauri/` | `start_monitor`, `speak` |
+| Hlidskjalf | `hlidskjalf/src-tauri/` | `start_monitor`, `speak`, `open_in_editor`, `open_default` |
 | Svalinn | `svalinn/src-tauri/` | `scan_directory`, `list_qa_tree`, `open_in_editor`, `run_saga` |
-| Kvasir | `kvasir/src-tauri/` | `list_directory`, `read_file`, `open_in_editor`, `convert_to_all_formats`, `detect_data_format` |
-| Ratatoskr | `ratatoskr/src-tauri/` | `load_graph`, `save_graph`, `get_graph_stats`, `generate_sample_graph` |
+| Kvasir | `kvasir/src-tauri/` | `list_directory`, `read_file`, `open_in_editor`, `convert_to_all_formats`, `detect_data_format`, `read_jsonl_info`, `read_jsonl_entry`, `export_entry_as`, `read_table`, `export_table_csv`, `get_pending_file` |
+| Ratatoskr | `ratatoskr/src-tauri/` | `load_graph`, `save_graph`, `get_graph_stats`, `generate_sample_graph`, `list_directory` |
 | Yggdrasil | `yggdrasil/src-tauri/` | All above with prefixes (hlid_, sval_, kvas_, rata_) |
 
 ### Svelte Frontends — View Components
@@ -99,7 +101,7 @@ Yggdrasil is a unified introspection platform — 5 Tauri 2.x desktop apps for m
 |-----|---------------|------|-----------------------|
 | Hlidskjalf | `HlidskjalfView.svelte` | `hlidskjalf/src/lib/` | `QualityReport.svelte` |
 | Svalinn | `SvalinnView.svelte` | `svalinn/src/lib/` | — |
-| Kvasir | `KvasirView.svelte` | `kvasir/src/lib/` | `MarkdownPreview.svelte`, `SchemaInspector.svelte`, `schema-inspect.ts` |
+| Kvasir | `KvasirView.svelte` | `kvasir/src/lib/` | `JsonlViewer.svelte`, `TableViewer.svelte`, `FormatControls.svelte`, `MarkdownPreview.svelte`, `SchemaInspector.svelte`, `schema-inspect.ts`, `kvasir-types.ts` |
 | Ratatoskr | `RatatoskrView.svelte` | `ratatoskr/src/lib/` | — |
 
 **View component contract:** Each accepts a `commands` prop mapping bare command names to (potentially prefixed) names. Internal imports use `./` (not `$lib/`). This allows Yggdrasil to import them via Vite aliases and supply prefixed command names.
@@ -108,9 +110,9 @@ Yggdrasil is a unified introspection platform — 5 Tauri 2.x desktop apps for m
 
 Package: `@yggdrasil/ui`
 
-12 components: `SidebarLayout`, `Button`, `Badge`, `Input`, `Select`, `Panel`, `StatCard`, `TreeNode`, `Collapsible`, `ListItem`, `SearchInput`, `FilterBanner`
+26 components: `AppHeader`, `Badge`, `Breadcrumbs`, `Button`, `Checkbox`, `Collapsible`, `ContainerLayout`, `EmptyState`, `ErrorBanner`, `FilterBanner`, `FontControls`, `Input`, `ListItem`, `ModeBar`, `Panel`, `SearchInput`, `Select`, `SettingsBar`, `SidebarLayout`, `Slider`, `SoloContainer`, `StatCard`, `ThemeSwitcher`, `ToggleGroup`, `TreeNode`, `YggContainer`
 
-CSS design tokens in `ui/css/tokens.css`. All apps import this for consistent theming.
+CSS design tokens in `ui/css/tokens.css`. 4 themes: dark (default), light, warm-dark, cool-dark. All apps import this for consistent theming.
 
 Severity token: `--severity-success` (green), `--severity-warning` (amber), `--severity-error` (red).
 
@@ -128,7 +130,9 @@ Severity token: `--severity-success` (green), `--severity-warning` (amber), `--s
 
 | Dependency | Source | What It Provides |
 |------------|--------|-----------------|
-| Nornir `datagram` | `~/.ai/smidja/nornir/capability/datagram` | `Datagram`, `DatagramKind`, `Priority` — canonical protocol types, fire-and-forget socket send |
+| Nornir `datagram_io` | `~/.ai/smidja/nornir/capability/datagram_io` | `Datagram`, `DatagramKind`, `Priority` — canonical protocol types, fire-and-forget socket send |
+| Nornir `format_core` | `~/.ai/smidja/nornir/core/format_core` | Format parsers (JSON/YAML/TOML/TOON/XML → `serde_json::Value`) and serializers (Value → JSON/YAML/TOML/TOON/XML/Markdown). `@`-prefix convention for XML attributes, `#text` for text content. |
+| Nornir `error_core` | `~/.ai/smidja/nornir/core/error_core` | `FormatError` enum — per-format parse errors + educational diagnostics |
 | Nornir binaries | `~/.ai/smidja/nornir/` | `send_alert`, `send_datagram`, etc. — CLI tools for emitting datagrams to the Hlidskjalf Unix socket |
 | Bifrost | `~/.ai/smidja/bifrost/` | Exchange diff datagrams (planned), compaction alerts (current via `send_alert`) |
 | Datagram protocol | `schemas/datagram.schema.json` | Wire format contract between all datagram producers and the Hlidskjalf consumer |
@@ -168,7 +172,11 @@ Severity token: `--severity-success` (green), `--severity-warning` (amber), `--s
 
 ### Current Build State
 
-All 5 apps have working Rust backends and Svelte frontends. Hlidskjalf is the most complete — working event feed with datagram rendering, QualityReport payload renderer, priority/kind filtering, speech alerts, auto-scroll, lockfile monitoring, log rotation.
+All 5 apps have working Rust backends and Svelte frontends. All use ContainerLayout (shared layout shell with sidebar, settings, mode bar, breadcrumbs, theme switching). 4 themes available: dark, light, warm-dark, cool-dark.
+
+**Hlidskjalf** — working event feed with datagram rendering, QualityReport payload renderer, priority/kind filtering, speech alerts, auto-scroll, lockfile monitoring, log rotation.
+
+**Kvasir** — full workspace inspector with: directory tree browser, syntax-highlighted code viewer (highlight.js), format conversion (JSON/YAML/TOML/TOON/RON/XML/Markdown with real BPE token counts via tiktoken-rs), JSONL entry-by-entry browser with scrubber and keyboard navigation, tabular data viewer (CSV/TSV/Parquet with sort/filter/export), JSON Schema inspector, markdown preview (rendered), wrap mode cycling, OS file association handler. Browsing allowed in `~/.ai/` and `~/.claude/`.
 
 ### Active Design — Not Yet Implemented
 

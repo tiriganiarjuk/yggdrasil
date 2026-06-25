@@ -24,6 +24,7 @@ toml = "0.8"
 serde_toon2 = "0.1"
 toon-format = "0.4"
 ron = "0.12"
+tiktoken-rs = "0.9"
 csv = "1"
 parquet = { version = "58", default-features = false, features = ["arrow"] }
 arrow = { version = "58", default-features = false }

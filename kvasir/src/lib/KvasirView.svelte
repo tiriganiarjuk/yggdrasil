@@ -421,6 +421,11 @@
     }
     return marked(raw) as string;
   });
+
+  let renderedDataMarkdown = $derived.by(() => {
+    if (activeTab !== "data" || selectedFormat !== "md" || !dataFormats) return "";
+    return marked(dataFormats.md.content) as string;
+  });
 </script>
 
 <ContainerLayout
@@ -526,9 +531,12 @@
       <section class="inspector-view">
         <SchemaInspector schema={inspectedSchema} />
       </section>
-    <!-- Markdown Preview -->
+    <!-- Markdown Preview (source .md file) -->
     {:else if activeTab === "preview" && isMarkdownFile}
       <MarkdownPreview content={renderedMarkdown} />
+    <!-- Rendered Markdown (data format conversion) -->
+    {:else if activeTab === "data" && selectedFormat === "md" && renderedDataMarkdown}
+      <MarkdownPreview content={renderedDataMarkdown} />
     {:else}
       <section class="code-viewer" class:wrap79={wrapMode === "wrap79"} class:wrapwidth={wrapMode === "wrapwidth"}>
         <pre><code>{#each displayContent.split('\n') as line, i}{@const highlighted = highlightedContent.split('\n')[i] || ''}<span class="line-number" data-line={i + 1}>{i + 1}</span><span class="line-content">{@html highlighted}</span>
