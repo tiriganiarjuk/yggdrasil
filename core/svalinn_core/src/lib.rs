@@ -162,7 +162,7 @@ pub use common_core::open_in_editor;
 
 pub fn run_saga(directory: &str) -> Result<SagaResult, String> {
     let saga_path = dirs::home_dir()
-        .map(|h| h.join(".ai/phoenix/quality/saga/.venv/bin/saga"))
+        .map(|h| h.join("ai/phoenix/quality/saga/.venv/bin/saga"))
         .ok_or("Could not determine home directory")?;
 
     if !saga_path.exists() {

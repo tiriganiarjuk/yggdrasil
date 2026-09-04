@@ -123,7 +123,7 @@ fn setup_multicast_socket() -> Result<tokio::net::UdpSocket, String> {
 
 fn hlidskjalf_dir() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| FALLBACK_HOME.into());
-    PathBuf::from(home).join(".ai").join("hlidskjalf")
+    PathBuf::from(home).join("ai").join("hlidskjalf")
 }
 
 fn keep_alive_path() -> PathBuf {

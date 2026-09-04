@@ -5,7 +5,7 @@
     onNavigate: (path: string) => void;
   }
 
-  let { path, rootPrefix = "/Users/johnny/.ai", onNavigate }: Props = $props();
+  let { path, rootPrefix = "/Users/johnny/ai", onNavigate }: Props = $props();
 
   interface Crumb {
     label: string;
@@ -30,7 +30,7 @@
     }
 
     // Root crumb for the prefix
-    const rootLabel = prefix.endsWith("/.ai") ? "@" : "~";
+    const rootLabel = prefix.endsWith("/ai") ? "@" : "~";
     const result: Crumb[] = [{ label: rootLabel, path: prefix }];
 
     // Segments below the prefix

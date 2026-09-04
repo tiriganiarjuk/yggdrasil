@@ -127,7 +127,7 @@
   onMount(async () => {
     if (!directory) {
       const home = await homeDir();
-      directory = home.replace(/\/?$/, "/.ai");
+      directory = home.replace(/\/?$/, "/ai");
       await loadTree();
     }
   });

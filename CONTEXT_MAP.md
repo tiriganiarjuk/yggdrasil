@@ -130,11 +130,11 @@ Severity token: `--severity-success` (green), `--severity-warning` (amber), `--s
 
 | Dependency | Source | What It Provides |
 |------------|--------|-----------------|
-| Nornir `datagram_io` | `~/.ai/smidja/nornir/capability/datagram_io` | `Datagram`, `DatagramKind`, `Priority` — canonical protocol types, fire-and-forget socket send |
-| Nornir `format_core` | `~/.ai/smidja/nornir/core/format_core` | Format parsers (JSON/YAML/TOML/TOON/XML → `serde_json::Value`) and serializers (Value → JSON/YAML/TOML/TOON/XML/Markdown). `@`-prefix convention for XML attributes, `#text` for text content. |
-| Nornir `error_core` | `~/.ai/smidja/nornir/core/error_core` | `FormatError` enum — per-format parse errors + educational diagnostics |
-| Nornir binaries | `~/.ai/smidja/nornir/` | `send_alert`, `send_datagram`, etc. — CLI tools for emitting datagrams to the Hlidskjalf Unix socket |
-| Bifrost | `~/.ai/smidja/bifrost/` | Exchange diff datagrams (planned), compaction alerts (current via `send_alert`) |
+| Nornir `datagram_io` | `~/ai/smidja/nornir/capability/datagram_io` | `Datagram`, `DatagramKind`, `Priority` — canonical protocol types, fire-and-forget socket send |
+| Nornir `format_core` | `~/ai/smidja/nornir/core/format_core` | Format parsers (JSON/YAML/TOML/TOON/XML → `serde_json::Value`) and serializers (Value → JSON/YAML/TOML/TOON/XML/Markdown). `@`-prefix convention for XML attributes, `#text` for text content. |
+| Nornir `error_core` | `~/ai/smidja/nornir/core/error_core` | `FormatError` enum — per-format parse errors + educational diagnostics |
+| Nornir binaries | `~/ai/smidja/nornir/` | `send_alert`, `send_datagram`, etc. — CLI tools for emitting datagrams to the Hlidskjalf Unix socket |
+| Bifrost | `~/ai/smidja/bifrost/` | Exchange diff datagrams (planned), compaction alerts (current via `send_alert`) |
 | Datagram protocol | `schemas/datagram.schema.json` | Wire format contract between all datagram producers and the Hlidskjalf consumer |
 
 ---
@@ -176,7 +176,7 @@ All 5 apps have working Rust backends and Svelte frontends. All use ContainerLay
 
 **Hlidskjalf** — working event feed with datagram rendering, QualityReport payload renderer, priority/kind filtering, speech alerts, auto-scroll, lockfile monitoring, log rotation.
 
-**Kvasir** — full workspace inspector with: directory tree browser, syntax-highlighted code viewer (highlight.js), format conversion (JSON/YAML/TOML/TOON/RON/XML/Markdown with real BPE token counts via tiktoken-rs), JSONL entry-by-entry browser with scrubber and keyboard navigation, tabular data viewer (CSV/TSV/Parquet with sort/filter/export), JSON Schema inspector, markdown preview (rendered), wrap mode cycling, OS file association handler. Browsing allowed in `~/.ai/` and `~/.claude/`.
+**Kvasir** — full workspace inspector with: directory tree browser, syntax-highlighted code viewer (highlight.js), format conversion (JSON/YAML/TOML/TOON/RON/XML/Markdown with real BPE token counts via tiktoken-rs), JSONL entry-by-entry browser with scrubber and keyboard navigation, tabular data viewer (CSV/TSV/Parquet with sort/filter/export), JSON Schema inspector, markdown preview (rendered), wrap mode cycling, OS file association handler. Browsing allowed in `~/ai/` and `~/.claude/`.
 
 ### Active Design — Not Yet Implemented
 

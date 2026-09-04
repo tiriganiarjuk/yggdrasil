@@ -106,7 +106,7 @@ Current `WatchtowerEvent` fields map to the new format:
 All datagrams are appended to a `.jsonl` file:
 
 ```
-~/.ai/hlidskjalf/events.jsonl
+~/ai/hlidskjalf/events.jsonl
 ```
 
 - One JSON object per line (same as socket format)
@@ -121,8 +121,8 @@ Two lockfiles, both conditions must be satisfied:
 
 | File | Required State | Meaning |
 |------|---------------|---------|
-| `~/.ai/hlidskjalf/KEEP_ALIVE.lock` | Must exist | System is running normally |
-| `~/.ai/hlidskjalf/KILL.lock` | Must not exist | No emergency shutdown active |
+| `~/ai/hlidskjalf/KEEP_ALIVE.lock` | Must exist | System is running normally |
+| `~/ai/hlidskjalf/KILL.lock` | Must not exist | No emergency shutdown active |
 
 **Trigger conditions:**
 - Manual: You remove `KEEP_ALIVE.lock` or create `KILL.lock`
@@ -133,7 +133,7 @@ Two lockfiles, both conditions must be satisfied:
 ### Forced Scan Trigger
 
 ```
-{workspace}/.ai/SYN.lock
+{workspace}/ai/SYN.lock
 ```
 
 - Hlidskjalf monitors the log for scan events and triggers a full scan when either condition is met:
@@ -181,7 +181,7 @@ This ensures Claude receives workspace-wide quality data at a controlled cadence
 
 ## Sender Binaries
 
-Separate compiled binaries per severity level, deployed to `~/.ai/tools/bin/`. No flags for priority — the binary name IS the severity. This prevents LLMs and subagents from "helpfully" escalating their own messages.
+Separate compiled binaries per severity level, deployed to `~/ai/tools/bin/`. No flags for priority — the binary name IS the severity. This prevents LLMs and subagents from "helpfully" escalating their own messages.
 
 ### Fixed-severity senders
 

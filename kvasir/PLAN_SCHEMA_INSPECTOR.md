@@ -8,7 +8,7 @@ sidecar generation required.
 
 ## Source Reference
 
-`/Users/johnny/.ai/spaces/bragi/tools/inspect_schema.py` (~1260 lines Python)
+`/Users/johnny/ai/spaces/bragi/tools/inspect_schema.py` (~1260 lines Python)
 
 The Python script reads a JSON Schema file and produces an interactive HTML report
 showing per-field requirement status, type summaries, conditional rules, and

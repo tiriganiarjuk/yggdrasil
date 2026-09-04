@@ -229,9 +229,9 @@
   }
 
   function resolveNotation(notation: string): string {
-    // @path/to/file or @seg:seg — both resolve under ~/.ai/
+    // @path/to/file or @seg:seg — both resolve under ~/ai/
     const relative = notation.slice(1).replace(/:/g, "/");
-    return `/Users/johnny/.ai/${relative}`;
+    return `/Users/johnny/ai/${relative}`;
   }
 
   function parsePathSegments(text: string): TextSegment[] {

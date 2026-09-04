@@ -263,7 +263,7 @@
             <Button variant="ghost" size="sm" onclick={onSetCwd}>Set CWD</Button>
           {/if}
           {#if sidebarMode === "tree"}
-            <Button variant="ghost" size="sm" active={homeBrowse} onclick={() => homeBrowse = !homeBrowse} title={homeBrowse ? "Browsing ~/ (click to restrict to ~/.ai/)" : "Browsing ~/.ai/ (click to allow ~/)"}>
+            <Button variant="ghost" size="sm" active={homeBrowse} onclick={() => homeBrowse = !homeBrowse} title={homeBrowse ? "Browsing ~/ (click to restrict to ~/ai/)" : "Browsing ~/ai/ (click to allow ~/)"}>
               {homeBrowse ? "~/" : "@/"}
             </Button>
           {/if}

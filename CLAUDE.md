@@ -94,7 +94,7 @@ None of them felt uncertain while doing it.
 ## You Will Get These Things Wrong (salvaged)
 
 ### Looking Everywhere But the Setting When a Restriction Is Reported
-**Detection:** The user says a restriction exists ("we set it so Kvasir can only browse `~/.ai/`", "there's a limit on Z") and you start searching for errors, Tauri scopes, capabilities, or entitlements, or you speculate that the restriction doesn't exist.
+**Detection:** The user says a restriction exists ("we set it so Kvasir can only browse `~/ai/`", "there's a limit on Z") and you start searching for errors, Tauri scopes, capabilities, or entitlements, or you speculate that the restriction doesn't exist.
 **Why it's wrong:** The restriction does exist — the user put it there. Kvasir's path restriction, for example, is enforced in the shared `ContainerLayout.svelte` (`cwdRoot`, `isWithinBoundary`), NOT in Tauri scopes/capabilities/entitlements or app-specific Rust. Chasing the wrong layer cost many rounds and forced the user to escalate repeatedly.
 **Recovery:** FIND THE SETTING FIRST. Grep broadly for the restricted path/value across ALL source files — including shared UI components like `ContainerLayout.svelte` — before investigating any other cause.
 

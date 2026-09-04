@@ -53,8 +53,8 @@
 
   function resolvePath(file: string): string {
     if (file.startsWith("/")) return file;
-    if (file.startsWith("@")) return `/Users/johnny/.ai/${file.slice(1)}`;
-    return `/Users/johnny/.ai/${file}`;
+    if (file.startsWith("@")) return `/Users/johnny/ai/${file.slice(1)}`;
+    return `/Users/johnny/ai/${file}`;
   }
 
   // ── Helpers ────────────────────────────────────────────────────────

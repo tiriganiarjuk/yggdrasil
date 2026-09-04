@@ -212,6 +212,6 @@ Note: Local event logging removed from Hlidskjalf. Persistence is handled by nor
 
 | File | Purpose |
 |------|---------|
-| `~/.ai/hlidskjalf/KEEP_ALIVE.lock` | Must exist for hooks to allow actions |
-| `~/.ai/hlidskjalf/KILL.lock` | Must not exist — presence blocks everything |
-| `{workspace}/.ai/SYN.lock` | Presence triggers full workspace syn scan |
+| `~/ai/hlidskjalf/KEEP_ALIVE.lock` | Must exist for hooks to allow actions |
+| `~/ai/hlidskjalf/KILL.lock` | Must not exist — presence blocks everything |
+| `{workspace}/ai/SYN.lock` | Presence triggers full workspace syn scan |

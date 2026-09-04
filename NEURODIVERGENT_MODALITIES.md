@@ -229,7 +229,7 @@ The design principle: **you are always aware, at the level of intrusiveness you 
 
 ### Profile Storage
 
-Profiles saved as JSON in `~/.ai/hlidskjalf/alert_profiles.json` or equivalent. Loaded on startup. The active profile name persists across sessions.
+Profiles saved as JSON in `~/ai/hlidskjalf/alert_profiles.json` or equivalent. Loaded on startup. The active profile name persists across sessions.
 
 ### Tauri Commands
 
