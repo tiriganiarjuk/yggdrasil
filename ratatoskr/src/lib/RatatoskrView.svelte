@@ -92,7 +92,7 @@
   // ── File tree state ────────────────────────────────────────────────────
 
   const HOME = "/Users/johnny";
-  let directory = $state(`${HOME}/.ai`);
+  let directory = $state(`${HOME}/ai`);
   let showHidden = $state(false);
   let treeNodes: TreeNodeData[] = $state([]);
   let selectedFile: string | null = $state(null);

@@ -102,7 +102,7 @@
 
   // ── Constants ─────────────────────────────────────────────────────────
   const HOME = "/Users/johnny";
-  const AI_HOME = `${HOME}/.ai`;
+  const AI_HOME = `${HOME}/ai`;
   const CLAUDE_HOME = `${HOME}/.claude`;
   const ALLOWED_ROOTS = [AI_HOME, CLAUDE_HOME];
 
