@@ -4202,6 +4202,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "saga_core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4730,6 +4738,7 @@ dependencies = [
  "common_core",
  "dirs 5.0.1",
  "glob",
+ "saga_core",
  "serde",
  "serde_json",
 ]

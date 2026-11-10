@@ -1,4 +1,5 @@
 use glob::glob;
+use saga_core::{qa_path, SanityReport};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -53,29 +54,15 @@ pub struct SvalFileTreeEntry {
 }
 
 // ============================================================================
-// Sidecar Reading
+// Sidecar Reading — the .qa format is saga_core's; this only flattens it
 // ============================================================================
 
-#[derive(Debug, Deserialize)]
-struct QaSidecarReport {
-    file: String,
-    issues: Vec<SidecarIssue>,
-}
-
-#[derive(Debug, Deserialize)]
-struct SidecarIssue {
-    tool: String,
-    code: String,
-    severity: String,
-    line: usize,
-    column: Option<usize>,
-    message: String,
-    #[serde(default)]
-    signal: Option<String>,
-    #[serde(default)]
-    direction: Option<String>,
-    #[serde(default)]
-    canary: Option<String>,
+fn non_empty(value: String) -> Option<String> {
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }
 
 fn find_sidecars(directory: &str, include_tests: bool) -> Result<Vec<PathBuf>, String> {
@@ -97,7 +84,7 @@ fn read_sidecar(path: &Path) -> Result<Vec<Issue>, String> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
 
-    let report: QaSidecarReport = serde_json::from_str(&content)
+    let report: SanityReport = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?;
 
     Ok(report
@@ -111,9 +98,9 @@ fn read_sidecar(path: &Path) -> Result<Vec<Issue>, String> {
             line: i.line,
             column: i.column,
             message: i.message,
-            signal: i.signal,
-            direction: i.direction,
-            canary: i.canary,
+            signal: non_empty(i.signal),
+            direction: non_empty(i.direction),
+            canary: non_empty(i.canary),
         })
         .collect())
 }
@@ -162,7 +149,7 @@ pub use common_core::open_in_editor;
 
 pub fn run_saga(directory: &str) -> Result<SagaResult, String> {
     let saga_path = dirs::home_dir()
-        .map(|h| h.join("ai/phoenix/quality/saga/.venv/bin/saga"))
+        .map(|h| h.join("ai/tools/bin/saga"))
         .ok_or("Could not determine home directory")?;
 
     if !saga_path.exists() {
@@ -218,11 +205,7 @@ fn parse_saga_output(output: &str) -> (usize, usize) {
 
 fn sidecar_status(path: &Path, name: &str, is_dir: bool) -> (bool, usize) {
     if !is_dir && name.ends_with(".py") {
-        let parent = match path.parent() {
-            Some(dir) => dir,
-            None => return (false, 0),
-        };
-        let sidecar_path = parent.join(format!(".{}.qa", name));
+        let sidecar_path = qa_path(path);
         if sidecar_path.exists() {
             let count = read_sidecar(&sidecar_path)
                 .map(|issues| issues.len())

@@ -17,6 +17,7 @@ members = [
 datagram_io = { path = "../nornir/capability/datagram_io" }
 format_core = { path = "../nornir/core/format_core" }
 error_core = { path = "../nornir/core/error_core" }
+saga_core = { path = "../nornir/core/saga_core" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
