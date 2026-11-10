@@ -2,7 +2,10 @@
 set -euo pipefail
 
 WORKSPACE="/Users/johnny/ai/smidja/yggdrasil"
-BUNDLE_DIR="$WORKSPACE/target/release/bundle/macos"
+# Where cargo builds — asked, not assumed: .cargo/config.toml puts it on the
+# Derived volume, and that location is cargo's to resolve.
+TARGET_DIR="$(cd "$WORKSPACE" && cargo metadata --format-version 1 --no-deps --quiet | jq -r .target_directory)"
+BUNDLE_DIR="$TARGET_DIR/release/bundle/macos"
 DEST="/Applications"
 
 ALL_APPS=(hlidskjalf svalinn kvasir ratatoskr yggdrasil)
@@ -55,10 +58,10 @@ done
 # Clean build artifacts to reclaim disk space
 echo ""
 echo "==> Cleaning build artifacts"
-rm -rf "$WORKSPACE/target/release/bundle"
-rm -rf "$WORKSPACE/target/release/deps"
-rm -rf "$WORKSPACE/target/release/build"
-rm -rf "$WORKSPACE/target/release/.fingerprint"
+rm -rf "$TARGET_DIR/release/bundle"
+rm -rf "$TARGET_DIR/release/deps"
+rm -rf "$TARGET_DIR/release/build"
+rm -rf "$TARGET_DIR/release/.fingerprint"
 
 # Show result
 echo ""
@@ -66,4 +69,4 @@ echo "Done. Deployed:"
 ls -ld /Applications/{hlidskjalf,svalinn,kvasir,ratatoskr,yggdrasil}.app 2>/dev/null
 
 echo ""
-du -sh "$WORKSPACE/target" 2>/dev/null || true
+du -sh "$TARGET_DIR" 2>/dev/null || true

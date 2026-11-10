@@ -65,7 +65,7 @@ Yggdrasil is a unified introspection platform — 5 Tauri 2.x desktop apps for m
 |------|---------|
 | `Cargo.toml` | Workspace manifest — 10 crates (5 core + 5 Tauri), shared dependency versions, cross-repo datagram dep |
 | `deploy_apps.sh` | Build all 5 apps, move .app bundles to /Applications, clean build artifacts |
-| `.cargo/config.toml` | Build target configuration (aarch64-apple-darwin) |
+| `.cargo/config.toml` | `target-dir` → the Derived volume (`/Volumes/External/Derived/cargo-target/yggdrasil`); build intermediates never live in this repo |
 
 ### Core Crates (`core/`) — Pure Rust, No Tauri
 
