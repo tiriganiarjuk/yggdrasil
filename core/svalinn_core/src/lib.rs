@@ -52,8 +52,6 @@ pub struct ScanResult {
 #[derive(Debug, Clone, Serialize)]
 pub struct SagaResult {
     pub success: bool,
-    pub files_analyzed: usize,
-    pub not_fully_examined: usize,
     pub output: String,
 }
 
@@ -205,42 +203,17 @@ pub fn run_saga(directory: &str) -> Result<SagaResult, String> {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
-    // Saga writes its summary to stderr.
-    let (files_analyzed, not_fully_examined) = parse_saga_output(&stderr);
-
     let combined = if stderr.is_empty() {
         stdout
     } else {
         format!("{}\n{}", stdout, stderr)
     };
 
+    // What the run found is read from the sidecars it wrote; this says whether it ran.
     Ok(SagaResult {
         success: output.status.success(),
-        files_analyzed,
-        not_fully_examined,
         output: combined,
     })
-}
-
-/// The count saga's summary line gives before a label, e.g. the 12 in "12 generated".
-fn summary_count(summary: &str, label: &str) -> usize {
-    summary
-        .split(", ")
-        .find_map(|part| part.trim().strip_suffix(label))
-        .and_then(|count| count.trim().rsplit(' ').next())
-        .and_then(|count| count.parse().ok())
-        .unwrap_or(0)
-}
-
-/// From saga's summary line — "[saga] N generated, N skipped, N failed, N not fully
-/// examined (of N ... files)" — the files it wrote sidecars for, and those it could
-/// not fully examine.
-fn parse_saga_output(output: &str) -> (usize, usize) {
-    let Some(summary) = output.lines().find(|line| line.starts_with("[saga] ") && line.contains(" generated")) else {
-        return (0, 0);
-    };
-    let before_total = summary.split(" (of ").next().unwrap_or(summary);
-    (summary_count(before_total, " generated"), summary_count(before_total, " not fully examined"))
 }
 
 /// What a sidecar gives the tree to count: its issues and its faults, so a file
@@ -285,18 +258,6 @@ pub fn list_qa_tree(directory: &str) -> Result<Vec<SvalFileTreeEntry>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn saga_s_summary_gives_the_files_written_and_those_not_fully_examined() {
-        let stderr = "  src/.a.py.qa\n  FAULT /p/src/b.py: ruff: why\n\
-                      [saga] 12 generated, 3 skipped, 1 failed, 2 not fully examined (of 16 .py/.rs/.svelte files)\n";
-        assert_eq!(parse_saga_output(stderr), (12, 2));
-    }
-
-    #[test]
-    fn output_without_a_summary_gives_no_counts() {
-        assert_eq!(parse_saga_output("[saga] no .py files found in /p\n"), (0, 0));
-    }
 
     #[test]
     fn a_sidecar_that_cannot_be_used_is_a_fault_naming_it() {

@@ -61,8 +61,6 @@
 
   interface SagaResult {
     success: boolean;
-    files_analyzed: number;
-    not_fully_examined: number;
     output: string;
   }
 
