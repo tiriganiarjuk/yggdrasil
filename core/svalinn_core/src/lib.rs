@@ -1,5 +1,5 @@
 use glob::glob;
-use saga_core::{qa_path, SanityReport};
+use saga_core::qa_path;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -18,6 +18,8 @@ pub struct Issue {
     pub column: Option<usize>,
     pub message: String,
     #[serde(default)]
+    pub detail: Option<String>,
+    #[serde(default)]
     pub signal: Option<String>,
     #[serde(default)]
     pub direction: Option<String>,
@@ -25,11 +27,23 @@ pub struct Issue {
     pub canary: Option<String>,
 }
 
+/// A file that was not fully examined: an instrument could not do its work on it,
+/// or its sidecar could not be used. It is not known to be clean.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Fault {
+    pub file: String,
+    pub tool: String,
+    pub mode: String,
+    pub class: String,
+    pub message: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanResult {
     pub directory: String,
     pub files_scanned: usize,
     pub issues: Vec<Issue>,
+    pub faults: Vec<Fault>,
     pub by_tool: HashMap<String, usize>,
     pub by_severity: HashMap<String, usize>,
     pub by_file: HashMap<String, usize>,
@@ -40,7 +54,7 @@ pub struct ScanResult {
 pub struct SagaResult {
     pub success: bool,
     pub files_analyzed: usize,
-    pub total_issues: usize,
+    pub not_fully_examined: usize,
     pub output: String,
 }
 
@@ -80,14 +94,36 @@ fn find_sidecars(directory: &str, include_tests: bool) -> Result<Vec<PathBuf>, S
         .collect())
 }
 
-fn read_sidecar(path: &Path) -> Result<Vec<Issue>, String> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+/// One sidecar's issues and faults. The sidecar is read by saga's own loader, so a
+/// sidecar that cannot be read, or does not match the sidecar schema, comes back
+/// as a fault naming it.
+fn read_sidecar(path: &Path) -> (Vec<Issue>, Vec<Fault>) {
+    let report = match saga_runner::load_qa_file(path) {
+        Ok(report) => report,
+        Err(failure) => {
+            let unusable = Fault {
+                file: path.display().to_string(),
+                tool: "svalinn".to_string(),
+                mode: failure.mode.to_string(),
+                class: failure.class.to_string(),
+                message: failure.standard_message(),
+            };
+            return (Vec::new(), vec![unusable]);
+        }
+    };
 
-    let report: SanityReport = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?;
-
-    Ok(report
+    let faults = report
+        .faults
+        .into_iter()
+        .map(|fault| Fault {
+            file: report.file.clone(),
+            tool: fault.tool,
+            mode: fault.mode,
+            class: fault.class,
+            message: fault.message,
+        })
+        .collect();
+    let issues = report
         .issues
         .into_iter()
         .map(|i| Issue {
@@ -98,11 +134,13 @@ fn read_sidecar(path: &Path) -> Result<Vec<Issue>, String> {
             line: i.line,
             column: i.column,
             message: i.message,
+            detail: non_empty(i.detail),
             signal: non_empty(i.signal),
             direction: non_empty(i.direction),
             canary: non_empty(i.canary),
         })
-        .collect())
+        .collect();
+    (issues, faults)
 }
 
 // ============================================================================
@@ -113,13 +151,13 @@ pub fn scan_directory(directory: &str, include_tests: bool) -> Result<ScanResult
     let sidecars = find_sidecars(directory, include_tests)?;
 
     let mut all_issues: Vec<Issue> = vec![];
-    let mut files_scanned = 0;
+    let mut all_faults: Vec<Fault> = vec![];
+    let files_scanned = sidecars.len();
 
     for sidecar in sidecars {
-        if let Ok(issues) = read_sidecar(&sidecar) {
-            files_scanned += 1;
-            all_issues.extend(issues);
-        }
+        let (issues, faults) = read_sidecar(&sidecar);
+        all_issues.extend(issues);
+        all_faults.extend(faults);
     }
 
     let mut by_tool: HashMap<String, usize> = HashMap::new();
@@ -138,6 +176,7 @@ pub fn scan_directory(directory: &str, include_tests: bool) -> Result<ScanResult
         directory: directory.to_string(),
         files_scanned,
         issues: all_issues,
+        faults: all_faults,
         by_tool,
         by_severity,
         by_file,
@@ -173,7 +212,8 @@ pub fn run_saga(directory: &str) -> Result<SagaResult, String> {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
-    let (files_analyzed, total_issues) = parse_saga_output(&stdout);
+    // Saga writes its summary to stderr.
+    let (files_analyzed, not_fully_examined) = parse_saga_output(&stderr);
 
     let combined = if stderr.is_empty() {
         stdout
@@ -184,33 +224,44 @@ pub fn run_saga(directory: &str) -> Result<SagaResult, String> {
     Ok(SagaResult {
         success: output.status.success(),
         files_analyzed,
-        total_issues,
+        not_fully_examined,
         output: combined,
     })
 }
 
+/// The count saga's summary line gives before a label, e.g. the 12 in "12 generated".
+fn summary_count(summary: &str, label: &str) -> usize {
+    summary
+        .split(", ")
+        .find_map(|part| part.trim().strip_suffix(label))
+        .and_then(|count| count.trim().rsplit(' ').next())
+        .and_then(|count| count.parse().ok())
+        .unwrap_or(0)
+}
+
+/// From saga's summary line — "[saga] N generated, N skipped, N failed, N not fully
+/// examined (of N ... files)" — the files it wrote sidecars for, and those it could
+/// not fully examine.
 fn parse_saga_output(output: &str) -> (usize, usize) {
-    for line in output.lines() {
-        if line.starts_with("Analyzed") {
-            let parts: Vec<&str> = line.split_whitespace().collect();
-            if parts.len() >= 6 {
-                let files = parts[1].parse().unwrap_or(0);
-                let issues = parts[4].parse().unwrap_or(0);
-                return (files, issues);
-            }
-        }
-    }
-    (0, 0)
+    let Some(summary) = output.lines().find(|line| line.starts_with("[saga] ") && line.contains(" generated")) else {
+        return (0, 0);
+    };
+    let before_total = summary.split(" (of ").next().unwrap_or(summary);
+    (summary_count(before_total, " generated"), summary_count(before_total, " not fully examined"))
+}
+
+/// What a sidecar gives the tree to count: its issues and its faults, so a file
+/// that was not examined never shows as having nothing.
+fn findings_count(sidecar: &Path) -> usize {
+    let (issues, faults) = read_sidecar(sidecar);
+    issues.len() + faults.len()
 }
 
 fn sidecar_status(path: &Path, name: &str, is_dir: bool) -> (bool, usize) {
     if !is_dir && name.ends_with(".py") {
         let sidecar_path = qa_path(path);
         if sidecar_path.exists() {
-            let count = read_sidecar(&sidecar_path)
-                .map(|issues| issues.len())
-                .unwrap_or(0);
-            (true, count)
+            (true, findings_count(&sidecar_path))
         } else {
             (false, 0)
         }
@@ -220,8 +271,7 @@ fn sidecar_status(path: &Path, name: &str, is_dir: bool) -> (bool, usize) {
             .map(|paths| {
                 paths
                     .filter_map(Result::ok)
-                    .filter_map(|sidecar| read_sidecar(&sidecar).ok())
-                    .map(|issues| issues.len())
+                    .map(|sidecar| findings_count(&sidecar))
                     .sum()
             })
             .unwrap_or(0);
@@ -269,4 +319,37 @@ pub fn list_qa_tree(directory: &str) -> Result<Vec<SvalFileTreeEntry>, String> {
     });
 
     Ok(entries)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn saga_s_summary_gives_the_files_written_and_those_not_fully_examined() {
+        let stderr = "  src/.a.py.qa\n  FAULT /p/src/b.py: ruff: why\n\
+                      [saga] 12 generated, 3 skipped, 1 failed, 2 not fully examined (of 16 .py/.rs/.svelte files)\n";
+        assert_eq!(parse_saga_output(stderr), (12, 2));
+    }
+
+    #[test]
+    fn output_without_a_summary_gives_no_counts() {
+        assert_eq!(parse_saga_output("[saga] no .py files found in /p\n"), (0, 0));
+    }
+
+    #[test]
+    fn a_sidecar_that_cannot_be_used_is_a_fault_naming_it() {
+        let dir = std::env::temp_dir().join(format!("svalinn_core_unusable_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let sidecar = dir.join(".a.py.qa");
+        std::fs::write(&sidecar, r#"{"file":"/p/a.py","issues":[]}"#).unwrap();
+
+        let (issues, faults) = read_sidecar(&sidecar);
+        assert!(issues.is_empty());
+        assert_eq!(faults.len(), 1);
+        assert_eq!(faults[0].tool, "svalinn");
+        assert_eq!(faults[0].file, sidecar.display().to_string());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

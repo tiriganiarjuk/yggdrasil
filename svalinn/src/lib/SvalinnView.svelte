@@ -33,15 +33,26 @@
     line: number;
     column: number | null;
     message: string;
+    detail: string;
     signal: string;
     direction: string;
     canary: string;
+  }
+
+  // A file that was not fully examined: it is not known to be clean.
+  interface Fault {
+    file: string;
+    tool: string;
+    mode: string;
+    class: string;
+    message: string;
   }
 
   interface ScanResult {
     directory: string;
     files_scanned: number;
     issues: Issue[];
+    faults: Fault[];
     by_tool: Record<string, number>;
     by_severity: Record<string, number>;
     by_file: Record<string, number>;
@@ -51,7 +62,7 @@
   interface SagaResult {
     success: boolean;
     files_analyzed: number;
-    total_issues: number;
+    not_fully_examined: number;
     output: string;
   }
 
@@ -414,6 +425,7 @@
     <section class="stats">
       <StatCard value={scanResult.files_scanned} label="sidecars read" />
       <StatCard value={filteredStats.total} label="total issues" />
+      <StatCard value={scanResult.faults.length} label="not fully examined" severity={scanResult.faults.length > 0 ? "error" : "neutral"} />
       <StatCard value={filteredStats.blocked} label="blocked" severity="blocked" />
       <StatCard value={filteredStats.error} label="errors" severity="error" />
       <StatCard value={filteredStats.warning} label="warnings" severity="warning" />
@@ -451,6 +463,32 @@
     <SearchInput bind:value={searchQuery} placeholder="Search files, messages, codes..." />
 
     <section class="results">
+      {#if scanResult.faults.length > 0}
+        <Collapsible title="Not fully examined — not known to be clean" badgeCount={scanResult.faults.length} open={true}>
+          <ul class="issues">
+            {#each scanResult.faults as fault}
+              <li class="issue-row">
+                <div
+                  class="issue"
+                  onclick={() => openInEditor(fault.file, 1)}
+                  onkeydown={(e) => e.key === 'Enter' && openInEditor(fault.file, 1)}
+                  role="button"
+                  tabindex="0"
+                >
+                  <span class="issue-location">
+                    <span class="issue-file">{relativePath(fault.file)}</span>
+                  </span>
+                  <span class="issue-code" style="color: {severityColor('error')}">
+                    [{fault.tool}:{fault.mode}]
+                  </span>
+                  <span class="issue-message">{fault.message}</span>
+                </div>
+              </li>
+            {/each}
+          </ul>
+        </Collapsible>
+      {/if}
+
       <p class="results-count">{filteredIssues.length} issues shown</p>
 
       {#each groupedIssues as [group, issues]}
@@ -476,8 +514,11 @@
                   </span>
                   <span class="issue-message">{issue.message}</span>
                 </div>
-                {#if issue.signal || issue.direction || issue.canary}
+                {#if issue.detail || issue.signal || issue.direction || issue.canary}
                   <div class="issue-detail">
+                    {#if issue.detail}
+                      <p class="issue-rule"><span class="detail-label">Detail</span> {issue.detail}</p>
+                    {/if}
                     {#if issue.signal}
                       <p class="issue-signal"><span class="detail-label">Signal</span> {issue.signal}</p>
                     {/if}

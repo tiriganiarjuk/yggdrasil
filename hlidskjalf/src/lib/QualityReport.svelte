@@ -14,10 +14,20 @@
     severity: string;
     count: number;
     file_count: number;
+    detail: string;
     signal: string;
     direction: string;
     canary: string;
     locations: Location[];
+  }
+
+  // A file an instrument could not examine: it is not known to be clean.
+  interface Fault {
+    file: string;
+    tool: string;
+    mode: string;
+    class: string;
+    message: string;
   }
 
   function format_location(location: Location): string[] {
@@ -34,6 +44,7 @@
     total: number;
     check_types: number;
     groups: CheckGroup[];
+    faults: Fault[];
   }
 
   // ── Props ──────────────────────────────────────────────────────────
@@ -84,12 +95,38 @@
       <span class="banner-badge">SYN</span>
       <span class="banner-stats">
         <strong>{payload.total}</strong> violations across
-        <strong>{payload.check_types}</strong> check types
+        <strong>{payload.check_types}</strong> check types,
+        <strong>{payload.faults.length}</strong> faults
       </span>
       <span class="banner-meta">{workspace} &middot; {timestamp}</span>
     </div>
     <div class="banner-bar"></div>
   </div>
+
+  <!-- Faults: files that were not fully examined -->
+  {#if payload.faults.length > 0}
+    <div class="group severity-error">
+      <div class="group-header">
+        <span class="group-code">FAULTS</span>
+        <span class="group-count">
+          <strong>{payload.faults.length}</strong> not fully examined, so not known to be clean
+        </span>
+      </div>
+      <div class="group-education">
+        {#each payload.faults as fault}
+          <div class="edu-row">
+            <span class="edu-label signal-label">{fault.tool}</span>
+            <span class="edu-text">
+              <Button variant="ghost" class="location-link" disabled={!onOpenFile}
+                onclick={() => onOpenFile?.(resolvePath(fault.file))}
+              >{fault.file}</Button>
+              {fault.message}
+            </span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   <!-- Groups -->
   {#each payload.groups as group}
@@ -106,6 +143,12 @@
 
       <!-- Educational content -->
       <div class="group-education">
+        {#if group.detail}
+          <div class="edu-row">
+            <span class="edu-label detail-label">Detail</span>
+            <span class="edu-text">{group.detail}</span>
+          </div>
+        {/if}
         {#if group.signal}
           <div class="edu-row">
             <span class="edu-label signal-label">Signal</span>
@@ -278,6 +321,11 @@
     border-radius: var(--radius-sm);
     align-self: flex-start;
     margin-top: 2px;
+  }
+
+  .detail-label {
+    color: var(--text-secondary);
+    border: 1px solid var(--text-secondary);
   }
 
   .signal-label {

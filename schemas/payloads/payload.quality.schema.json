@@ -2,11 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "payload.quality.schema.json",
   "title": "Quality Datagram Payload",
-  "description": "Payload for kind: quality datagrams. Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregated locations.",
+  "description": "Payload for kind: quality datagrams. Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregated locations, and names every fault: a file an instrument could not examine, which is therefore not known to be clean.",
   "type": "object",
-  "required": ["total", "check_types", "groups"],
+  "required": ["total", "check_types", "groups", "faults"],
   "additionalProperties": false,
   "properties": {
+    "faults": {
+      "type": "array",
+      "description": "Every file that was not fully examined, with the instrument that could not do its work and why. Empty when every instrument ran.",
+      "items": { "$ref": "#/$defs/fault" }
+    },
     "total": {
       "type": "integer",
       "minimum": 0,
@@ -26,7 +31,7 @@
   "$defs": {
     "check_group": {
       "type": "object",
-      "required": ["tool", "code", "message", "severity", "count", "file_count", "signal", "direction", "canary", "locations"],
+      "required": ["tool", "code", "message", "severity", "count", "file_count", "detail", "signal", "direction", "canary", "locations"],
       "additionalProperties": false,
       "properties": {
         "tool": {
@@ -56,22 +61,53 @@
           "minimum": 1,
           "description": "Number of unique files containing this issue."
         },
+        "detail": {
+          "type": "string",
+          "description": "A gleipnir check's detail: the rule that was broken. Empty string for other tools. The four message fields are defined in the header of nornir's core/gleipnir_core/gleipnir_messages.toml."
+        },
         "signal": {
           "type": "string",
-          "description": "Architectural signal — what was detected. Empty string when not applicable."
+          "description": "A gleipnir check's signal: why the rule exists. Empty string for other tools."
         },
         "direction": {
           "type": "string",
-          "description": "Suggested fix direction. Empty string when not applicable."
+          "description": "A gleipnir check's direction: the one way forward. Empty string for other tools."
         },
         "canary": {
           "type": "string",
-          "description": "Context loss canary token. Empty string when not applicable."
+          "description": "A gleipnir check's canary, for the operator: the gaming move the check has been met with. Empty string for other tools."
         },
         "locations": {
           "type": "array",
           "description": "File-aggregated locations. Issues in the same file collapse into one entry.",
           "items": { "$ref": "#/$defs/location" }
+        }
+      }
+    },
+    "fault": {
+      "type": "object",
+      "required": ["file", "tool", "mode", "class", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "The file that was not fully examined, or the sidecar syn could not use."
+        },
+        "tool": {
+          "type": "string",
+          "description": "The instrument that could not do its work (e.g. \"gleipnir\", \"ruff\", \"basedpyright\", \"saga\", \"syn\")."
+        },
+        "mode": {
+          "type": "string",
+          "description": "The failure mode, by its name in nornir's error registry (failure_modes.toml)."
+        },
+        "class": {
+          "type": "string",
+          "description": "The failure class of that mode."
+        },
+        "message": {
+          "type": "string",
+          "description": "What failed, where, and what to do next."
         }
       }
     },

@@ -162,7 +162,7 @@ Payloads are kind-specific. Shape is determined entirely by `kind` — you never
 
 Schema: `schemas/payloads/payload.quality.schema.json`
 
-Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregated locations.
+Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregated locations, and names every fault: a file an instrument could not examine, which is therefore not known to be clean. A datagram carrying a fault is sent at high priority.
 
 ```json
 {
@@ -176,6 +176,7 @@ Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregat
       "severity": "warning",
       "count": 12,
       "file_count": 4,
+      "detail": "",
       "signal": "",
       "direction": "",
       "canary": "",
@@ -183,6 +184,15 @@ Emitted by the syn binary. Groups issues by (tool, code) pair with file-aggregat
         { "file": "src/lib.rs", "lines": [42, 85] },
         { "file": "src/main.rs", "line": 200 }
       ]
+    }
+  ],
+  "faults": [
+    {
+      "file": "src/tool.py",
+      "tool": "basedpyright",
+      "mode": "instrument_not_runnable",
+      "class": "instrument_error",
+      "message": "basedpyright could not be run on 'src/tool.py': No such file or directory. The file was not examined by basedpyright, so it is not known to be clean. Report this message to the user."
     }
   ]
 }
