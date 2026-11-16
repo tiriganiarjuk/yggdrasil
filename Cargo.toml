@@ -19,6 +19,7 @@ format_core = { path = "../nornir/core/format_core" }
 error_core = { path = "../nornir/core/error_core" }
 saga_core = { path = "../nornir/core/saga_core" }
 saga_runner = { path = "../nornir/capability/saga_runner" }
+directory_read_io = { path = "../nornir/capability/directory_read_io" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"

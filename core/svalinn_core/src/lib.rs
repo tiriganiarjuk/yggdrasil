@@ -1,4 +1,3 @@
-use glob::glob;
 use saga_core::qa_path;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -79,19 +78,13 @@ fn non_empty(value: String) -> Option<String> {
     }
 }
 
+/// Every sidecar under a directory, by saga's own walk — the one saga writes them
+/// with and syn finds them with. A tree that cannot be listed whole is an error
+/// naming what could not be read.
 fn find_sidecars(directory: &str, include_tests: bool) -> Result<Vec<PathBuf>, String> {
-    let pattern = format!("{}/**/.*.qa", directory);
-    Ok(glob(&pattern)
-        .map_err(|e| format!("Invalid glob pattern: {}", e))?
-        .filter_map(Result::ok)
-        .filter(|path| {
-            if include_tests {
-                true
-            } else {
-                !path.components().any(|c| c.as_os_str() == "tests")
-            }
-        })
-        .collect())
+    let left_out: &[&str] = if include_tests { &[] } else { &["tests"] };
+    saga_runner::find_files(Path::new(directory), left_out, &|name| name.starts_with('.') && name.ends_with(".qa"))
+        .map_err(|failure| failure.standard_message())
 }
 
 /// One sidecar's issues and faults. The sidecar is read by saga's own loader, so a
@@ -257,67 +250,35 @@ fn findings_count(sidecar: &Path) -> usize {
     issues.len() + faults.len()
 }
 
-fn sidecar_status(path: &Path, name: &str, is_dir: bool) -> (bool, usize) {
-    if !is_dir && name.ends_with(".py") {
-        let sidecar_path = qa_path(path);
-        if sidecar_path.exists() {
-            (true, findings_count(&sidecar_path))
-        } else {
-            (false, 0)
-        }
-    } else if is_dir {
-        let pattern = format!("{}/**/.*.qa", path.display());
-        let count: usize = glob(&pattern)
-            .map(|paths| {
-                paths
-                    .filter_map(Result::ok)
-                    .map(|sidecar| findings_count(&sidecar))
-                    .sum()
-            })
-            .unwrap_or(0);
-        (false, count)
+/// Whether a file has a sidecar, and what the tree counts for the entry: a file's
+/// own findings, or those of every sidecar under a directory.
+fn sidecar_status(path: &Path, is_dir: bool) -> Result<(bool, usize), String> {
+    if is_dir {
+        let sidecars = find_sidecars(&path.to_string_lossy(), true)?;
+        return Ok((false, sidecars.iter().map(|sidecar| findings_count(sidecar)).sum()));
+    }
+    let sidecar_path = qa_path(path);
+    if sidecar_path.exists() {
+        Ok((true, findings_count(&sidecar_path)))
     } else {
-        (false, 0)
+        Ok((false, 0))
     }
 }
 
+/// A directory's own entries, each with what its sidecars hold. The listing is
+/// `common_core::list_directory`'s, already directories first.
 pub fn list_qa_tree(directory: &str) -> Result<Vec<SvalFileTreeEntry>, String> {
-    let dir_path = Path::new(directory);
-    if !dir_path.is_dir() {
-        return Err(format!("Not a directory: {}", directory));
+    let mut entries = Vec::new();
+    for listed in common_core::list_directory(directory, false)? {
+        let (has_sidecar, issue_count) = sidecar_status(Path::new(&listed.path), listed.is_dir)?;
+        entries.push(SvalFileTreeEntry {
+            name: listed.name,
+            path: listed.path,
+            is_dir: listed.is_dir,
+            has_sidecar,
+            issue_count,
+        });
     }
-
-    let read_dir = std::fs::read_dir(dir_path)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
-
-    let mut entries: Vec<SvalFileTreeEntry> = read_dir
-        .flatten()
-        .filter_map(|entry| {
-            let path = entry.path();
-            let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with('.') {
-                return None;
-            }
-            let is_dir = path.is_dir();
-            let (has_sidecar, issue_count) = sidecar_status(&path, &name, is_dir);
-            Some(SvalFileTreeEntry {
-                name,
-                path: path.to_string_lossy().to_string(),
-                is_dir,
-                has_sidecar,
-                issue_count,
-            })
-        })
-        .collect();
-
-    entries.sort_by(|a, b| {
-        match (a.is_dir, b.is_dir) {
-            (true, false) => std::cmp::Ordering::Less,
-            (false, true) => std::cmp::Ordering::Greater,
-            _ => a.name.to_lowercase().cmp(&b.name.to_lowercase()),
-        }
-    });
-
     Ok(entries)
 }
 

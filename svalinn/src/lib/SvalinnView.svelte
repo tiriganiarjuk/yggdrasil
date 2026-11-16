@@ -3,7 +3,7 @@
   import { homeDir } from "@tauri-apps/api/path";
   import { open } from "@tauri-apps/plugin-dialog";
   import { onMount } from "svelte";
-  import { Button, ContainerLayout, StatCard, SearchInput, FilterBanner, EmptyState, ToggleGroup, Select, Checkbox, Collapsible } from "@yggdrasil/ui";
+  import { Button, ContainerLayout, StatCard, SearchInput, FilterBanner, EmptyState, ErrorBanner, ToggleGroup, Select, Checkbox, Collapsible } from "@yggdrasil/ui";
 
   let {
     commands = {
@@ -87,6 +87,9 @@
   let includeTests = $state(false);
   let scanResult: ScanResult | null = $state(null);
   let loading = $state(false);
+  // What a scan, a tree listing or a saga run failed with. A failure is shown,
+  // never left to look like a directory with nothing in it.
+  let error = $state("");
   let sagaRunning = $state(false);
   let viewMode: "by_file" | "by_code" | "by_tool" = $state("by_file");
   let severityFilter = $state("All");
@@ -158,8 +161,9 @@
         directory,
         includeTests,
       });
-    } catch (_) {
-      // scan failure surfaced via empty scanResult
+    } catch (scanFailure) {
+      scanResult = null;
+      error = `Scan failed: ${scanFailure}`;
     }
     loading = false;
   }
@@ -183,8 +187,8 @@
         })),
         loading: false,
       };
-    } catch (_) {
-      // tree failure surfaced via null treeRoot
+    } catch (treeFailure) {
+      error = `The file tree could not be listed: ${treeFailure}`;
     }
   }
 
@@ -206,8 +210,8 @@
             children: [],
             loading: false,
           }));
-        } catch (_) {
-          // child load failure leaves node empty
+        } catch (treeFailure) {
+          error = `${node.path} could not be listed: ${treeFailure}`;
         }
         node.loading = false;
       }
@@ -234,12 +238,16 @@
   async function runSaga() {
     if (!directory) return;
     sagaRunning = true;
+    error = "";
     try {
-      await invoke<SagaResult>(commands.run_saga, { directory });
+      const sagaResult = await invoke<SagaResult>(commands.run_saga, { directory });
+      if (!sagaResult.success) {
+        error = `Saga failed, so the sidecars shown are not current: ${sagaResult.output}`;
+      }
       await refresh();
       await loadTree();
-    } catch (_) {
-      // saga failure surfaced via unchanged scanResult
+    } catch (sagaFailure) {
+      error = `Saga could not be run: ${sagaFailure}`;
     }
     sagaRunning = false;
   }
@@ -247,8 +255,8 @@
   async function openInEditor(file: string, line: number) {
     try {
       await invoke(commands.open_in_editor, { path: file, line });
-    } catch (_) {
-      // editor open is best-effort
+    } catch (editorFailure) {
+      error = `${file} could not be opened in the editor: ${editorFailure}`;
     }
   }
 
@@ -420,6 +428,10 @@
     </Button>
     <Checkbox bind:checked={includeTests} label="Include tests/" />
   </section>
+
+  {#if error}
+    <ErrorBanner onDismiss={() => error = ""}>{error}</ErrorBanner>
+  {/if}
 
   {#if scanResult}
     <section class="stats">

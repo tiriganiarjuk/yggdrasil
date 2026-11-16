@@ -705,6 +705,7 @@ dependencies = [
 name = "common_core"
 version = "0.1.0"
 dependencies = [
+ "directory_read_io",
  "serde",
 ]
 
@@ -985,6 +986,18 @@ checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer",
  "crypto-common",
+]
+
+[[package]]
+name = "directory_read_io"
+version = "0.1.0"
+dependencies = [
+ "failure_mode_core",
+ "schemas_embedded",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -3709,6 +3722,7 @@ dependencies = [
 name = "saga_runner"
 version = "0.1.0"
 dependencies = [
+ "directory_read_io",
  "failure_mode_core",
  "gleipnir_core",
  "saga_core",
@@ -4192,7 +4206,6 @@ version = "0.1.0"
 dependencies = [
  "common_core",
  "dirs 5.0.1",
- "glob",
  "saga_core",
  "saga_runner",
  "serde",

@@ -9,5 +9,4 @@ saga_core = { workspace = true }
 saga_runner = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-glob = { workspace = true }
 dirs = { workspace = true }
