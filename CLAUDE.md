@@ -15,7 +15,7 @@ After compaction, you have app names and a workspace shape but lose the core/she
 
 None of them felt uncertain while doing it.
 
-**The test:** Can you name the four command prefixes, explain why view components use `./` imports instead of `$lib/`, and state what the `commands` prop does on each view? If not, read PLAN_UNIFIED_SHELL.md before proceeding.
+Read PLAN_UNIFIED_SHELL.md before proceeding.
 
 ---
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
